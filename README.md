@@ -2,6 +2,9 @@
 
 **The Problem**: I have a non-CEC TV. If I shut off the TV without closing Tivimate, it will continue to stream forever. I don't want that consuming bandwidth on my network. There is no way to get the state of the TV if it is a non-CEC TV. This script will solve this problem.
 
+## Preview
+![](https://github.com/pythcon/tivimate-closer/blob/master/preview.gif)
+
 **TL;DR: This script will give you the classic "Are you still watching?" screen to save internet banwidth.**
 
 The script will check if the app (Tivimate) is running, if so, it will start tracking it if no entry. If there is an entry, it will check if it has been running longer than it should be (DURATION). When this is the case, the script will tell Tivimate to open the search screen, and paste a message there. That message is customizable. If the user doesnt press the back button within the defined wait (WAIT) period, it will close the app and delete the line from the tracking file.
