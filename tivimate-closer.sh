@@ -62,6 +62,23 @@ display_message() {
     fi
 }
 
+# Function to modify the tackfile
+modify_trackfile() {
+    local action
+    action="$1"
+    if [ "$action" == "create" ]; then
+        echo "$IP_ADDRESS $(timestamp)" > "$TRACKFILE"
+    elif [ "$action" == "add" ]; then
+        echo "$IP_ADDRESS $(timestamp)" >> "$TRACKFILE"
+    elif [ "$action" == "delete" ]; then
+        # Remove the IP address entry from the trackfile
+        sed -i "/$IP_ADDRESS/d" "$TRACKFILE"
+    else
+        echo "Action not found....exiting...."
+        exit 1
+    fi
+}
+
 # Function to check the trackfile and decide if the app needs to be turned off
 check_trackfile() {
     if [ -f "$TRACKFILE" ]; then
@@ -73,7 +90,7 @@ check_trackfile() {
             if [ $elapsed -gt $DURATION ]; then
                 echo "($(timestamp)): Elapsed time greater than duration, quiting ${PACKAGE_NAME}" | tee -a "$LOGFILE"
                 # Remove the IP address entry from the trackfile
-                sed -i "/$IP_ADDRESS/d" "$TRACKFILE"
+                modify_trackfile "delete"
                 return 0
             else
                 echo "($(timestamp)): Elapsed time less than duration, no action" | tee -a "$LOGFILE"
@@ -81,12 +98,14 @@ check_trackfile() {
             fi
         else
             echo "($(timestamp)): No entry for $IP_ADDRESS in trackfile, adding one now" | tee -a "$LOGFILE"
-            echo "$IP_ADDRESS $(timestamp)" >> "$TRACKFILE"
+            # Add the IP address entry to the trackfile
+            modify_trackfile "add"
             return 1
         fi
     else
         echo "($(timestamp)): Trackfile not found. Creating and adding entry for $IP_ADDRESS" | tee -a "$LOGFILE"
-        echo "$IP_ADDRESS $(timestamp)" > "$TRACKFILE"
+        # Create the trackfile and add this entry
+        modify_trackfile "create"
         return 1
     fi
 }
@@ -112,7 +131,8 @@ process_device() {
             echo "($(timestamp)): ${PACKAGE_NAME} is not running on $IP_ADDRESS" | tee -a "$LOGFILE"
             # Remove from trackfile here, if user closes before timeout, it will resume when app reopens
             if [ -f "$TRACKFILE" ]; then
-                sed -i "/$IP_ADDRESS/d" "$TRACKFILE"
+                echo "($(timestamp)): ${PACKAGE_NAME} is no longer running, removing entry if exists" | tee -a "$LOGFILE"
+                modify_trackfile "delete"
             fi
         fi
         
@@ -120,6 +140,8 @@ process_device() {
         echo "($(timestamp)): Disconnected from $IP_ADDRESS" | tee -a "$LOGFILE"
     else
         echo "($(timestamp)): Failed to connect to $IP_ADDRESS:${PORT}" | tee -a "$LOGFILE"
+        echo "($(timestamp)): Removing entry from trackfile" | tee -a "$LOGFILE"
+        modify_trackfile delete
     fi
 }
 
