@@ -110,6 +110,10 @@ process_device() {
             fi
         else
             echo "($(timestamp)): ${PACKAGE_NAME} is not running on $IP_ADDRESS" | tee -a "$LOGFILE"
+            # Remove from trackfile here, if user closes before timeout, it will resume when app reopens
+            if [ -f "$TRACKFILE" ]; then
+                sed -i "/$IP_ADDRESS/d" "$TRACKFILE"
+            fi
         fi
         
         adb disconnect "$IP_ADDRESS:${PORT}" >/dev/null 2>&1
