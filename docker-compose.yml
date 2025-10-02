@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  tivimate-closer:
+    build: .
+    container_name: tivimate-closer
+    restart: unless-stopped
+    network_mode: host  # Required for ADB network connections
+
+    environment:
+      # Device configuration (REQUIRED - comma-separated list)
+      DEVICE_IPS: "192.168.1.100"
+
+      # Timing configuration
+      DURATION: "10800"                    # 3 hours before showing warning
+      WAIT_TIME: "30"                      # Seconds to wait for user response
+      CHECK_INTERVAL: "60"                 # Check devices every 60 seconds
+
+      # App configuration
+      PACKAGE_NAME: "ar.tvplayer.tv"       # TiviMate package name
+      ADB_PORT: "5555"                     # ADB connection port
+
+      # Warning message (human-readable - auto-converts to ADB format)
+      WARNING_MESSAGE: "Are you still watching? (closing in 30 seconds)"
+
+      # Android version compatibility
+      # Android 11-: mResumedActivity
+      # Android 12+: ResumedActivity
+      ACTIVITY_RESUME_PATTERN: "ResumedActivity"
+
+      # Paths (container paths)
+      TRACKFILE: "/data/onn_tracking.log"
+      LOG_DIR: "/data/logs"
+
+      # Timezone
+      TZ: "America/New_York"
+
+    volumes:
+      # Persist ADB authentication keys (critical for maintaining device connections)
+      - ./.android:/root/.android
+
+      # Persist tracking data and logs
+      - ./data:/data
+
+      # Optional: Mount custom script for development
+      # - ./tivimate-closer.sh:/app/tivimate-closer.sh:ro
+
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "tivimate-closer.sh"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  # Named volume for ADB keys - persists even when container is removed
+  adb-keys:
+    driver: local
