@@ -39,6 +39,8 @@ ADB_PORT=${ADB_PORT:-5555}
 CHECK_INTERVAL=${CHECK_INTERVAL:-60}
 SERVICE_MODE=${SERVICE_MODE:-false}
 ACTIVITY_RESUME_PATTERN=${ACTIVITY_RESUME_PATTERN:-"mResumedActivity"}
+WAKEFULNESS_PATTERN=${WAKEFULNESS_PATTERN:-"mWakefulness"}
+SCREEN_OFF_STATE=${SCREEN_OFF_STATE:-"Asleep"}
 
 # Convert warning message to ADB format if needed
 WARNING_MESSAGE=$(convert_message_to_adb_format "$WARNING_MESSAGE")
@@ -103,7 +105,7 @@ is_cec_enabled() {
 # Function to check if screen is asleep
 is_screen_asleep() {
     local ip=$1
-    adb -s "${ip}:${ADB_PORT}" shell dumpsys power 2>/dev/null | grep "mWakefulness" | grep -q "Asleep"
+    adb -s "${ip}:${ADB_PORT}" shell dumpsys power 2>/dev/null | grep "$WAKEFULNESS_PATTERN" | grep -q "$SCREEN_OFF_STATE"
 }
 
 # Function to close app directly without warning

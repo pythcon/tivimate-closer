@@ -28,6 +28,10 @@ services:
       # Android 12+: ResumedActivity
       ACTIVITY_RESUME_PATTERN: "ResumedActivity"
 
+      # CEC TV power state detection
+      WAKEFULNESS_PATTERN: "mWakefulness"      # Power state pattern in dumpsys
+      SCREEN_OFF_STATE: "Asleep"               # Value indicating screen is off
+
       # Paths (container paths)
       TRACKFILE: "/data/onn_tracking.log"
       LOG_DIR: "/data/logs"
