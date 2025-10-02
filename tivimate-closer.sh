@@ -91,6 +91,35 @@ is_search_open() {
     adb -s "${ip}:${ADB_PORT}" shell dumpsys input_method 2>/dev/null | grep -q 'mServedView=androidx.leanback.widget.SearchEditText'
 }
 
+# Function to check if CEC is enabled
+is_cec_enabled() {
+    local ip=$1
+    local cec_output=$(adb -s "${ip}:${ADB_PORT}" shell dumpsys hdmi_control 2>/dev/null | grep "hdmi_cec_enabled")
+    # Extract the value between parentheses after "int):"
+    local cec_status=$(echo "$cec_output" | sed -n 's/.*int): \([0-9]\).*/\1/p')
+    [ "$cec_status" = "1" ]
+}
+
+# Function to check if screen is asleep
+is_screen_asleep() {
+    local ip=$1
+    adb -s "${ip}:${ADB_PORT}" shell dumpsys power 2>/dev/null | grep "mWakefulness" | grep -q "Asleep"
+}
+
+# Function to close app directly without warning
+close_app_directly() {
+    local ip=$1
+    local logfile=$2
+
+    log_message "ACTION" "CEC TV with screen off detected - closing ${PACKAGE_NAME} directly on ${ip}" "$logfile"
+    adb -s "${ip}:${ADB_PORT}" shell am force-stop "${PACKAGE_NAME}" 2>/dev/null
+
+    # Clear from tracking file if present
+    if [ -f "$TRACKFILE" ]; then
+        modify_trackfile "delete" "$ip"
+    fi
+}
+
 # Function to display a message using key events
 display_message() {
     local ip=$1
@@ -111,6 +140,9 @@ display_message() {
 
         # Input the text message
         adb -s "${ip}:${ADB_PORT}" shell input text "${WARNING_MESSAGE}" 2>/dev/null
+
+         # Press the back button to dismiss keyboard
+        adb -s "${ip}:${ADB_PORT}" shell input keyevent KEYCODE_BACK 2>/dev/null
     fi
 
     # Wait for user interaction
@@ -220,7 +252,12 @@ process_device() {
         if is_app_running "$ip"; then
             log_message "INFO" "${PACKAGE_NAME} is running on ${ip}" "$logfile"
 
-            if check_trackfile "$ip" "$logfile"; then
+            # Check if CEC is enabled and screen is off - close immediately regardless of timer
+            if is_cec_enabled "$ip" && is_screen_asleep "$ip"; then
+                log_message "INFO" "CEC TV with screen off detected - closing immediately (bypassing timer)" "$logfile"
+                close_app_directly "$ip" "$logfile"
+            elif check_trackfile "$ip" "$logfile"; then
+                # Non-CEC TV or screen is on - use normal timer and warning flow
                 display_message "$ip" "$logfile"
             fi
         else
