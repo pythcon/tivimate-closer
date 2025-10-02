@@ -39,6 +39,9 @@ services:
       # Persist ADB authentication keys (critical for maintaining device connections)
       - ./.android:/root/.android
 
+      # uncomment for volume instead
+      # - adb-keys:/root/.android
+
       # Persist tracking data and logs
       - ./data:/data
 
